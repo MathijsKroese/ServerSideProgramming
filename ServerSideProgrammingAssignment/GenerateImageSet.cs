@@ -1,3 +1,4 @@
+using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -19,35 +20,49 @@ using Unsplash.Models;
 
 namespace ServerSideProgrammingAssignment
 {
-    public static class CreateImageSet
+    public static class GenerateImageSet
     {
-        private const string _filename = "test.png";
-        private const string _weatherUrl = "https://data.buienradar.nl/2.0/feed/json";
-        private const string _unsplashAccessKey = "-sCUwfGsK3zxQ_wDSwHu5yPk-luIv7OywjLCcfdWvJg";
         private static HttpClient _httpClient = new();
+        private static readonly string _connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
+        private static readonly string _containerName = Environment.GetEnvironmentVariable("ContainerName");
+        private static readonly string _weatherUrl = Environment.GetEnvironmentVariable("WeatherUrl");
+        private static readonly string _unsplashKey = Environment.GetEnvironmentVariable("UnsplashKey");
 
-        [FunctionName("CreateImageSet")]
+        [FunctionName("GenerateImageSet")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req,
-            ILogger log)
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req)
         {
-            List<Image> images = new();
-            var stations = await GetWeatherStations();
-            var image = await GetRandomImage();
-            var imageStream = await GetImageStream(image.FirstOrDefault().Urls.Regular);
+            string guid = req.Query["guid"];
 
-            foreach (var station in stations)
+            if (string.IsNullOrEmpty(guid))
+                return new BadRequestObjectResult("No valid identifier");
+
+            List<WeatherStation> stations = await GetWeatherStations();
+            IEnumerable<Photo.Random> image = await GetRandomImage();
+            byte[] imageStream = await GetImageStream(image.FirstOrDefault().Urls.Regular);
+
+
+            BlobContainerClient containerClient = new BlobContainerClient(_connectionString, $"{_containerName}/{guid}");
+
+            int count = 0;
+
+            foreach (WeatherStation station in stations)
             {
                 string weatherInfo = $"{station.StationName}\n{station.TimeStamp.ToString("dd/MM/yyyy HH:mm")}\n{station.WeatherDescription}";
-                var memoryStream = EditImage(imageStream, weatherInfo);
-                var img = Image.Load(memoryStream);
-                images.Add(img);
+                MemoryStream memoryStream = GetEditedImageStream(imageStream, weatherInfo);
+                string filename = $"{station.StationName}.png";
 
-                img.Save($"../{_filename}");
+                if (count <= 2)
+                {
+                    BlobClient blobClient = containerClient.GetBlobClient($"{guid}/{filename}");
+                    blobClient.Upload(memoryStream);
+                }
+                count++;
             }
 
             return new OkObjectResult("");
         }
+
 
         static async Task<List<WeatherStation>> GetWeatherStations()
         {
@@ -56,9 +71,11 @@ namespace ServerSideProgrammingAssignment
             using HttpResponseMessage response = await _httpClient.GetAsync(_weatherUrl);
             response.EnsureSuccessStatusCode();
 
-            var json = await response.Content.ReadAsStringAsync();
+            string json = await response.Content.ReadAsStringAsync();
 
-            foreach (var currentStation in JObject.Parse(json)["actual"]["stationmeasurements"])
+            JObject token = JObject.Parse(json);
+
+            foreach (JToken currentStation in token["actual"]["stationmeasurements"])
                 weatherStations.Add(new WeatherStation
                 {
                     StationName = (string)currentStation["stationname"],
@@ -73,7 +90,7 @@ namespace ServerSideProgrammingAssignment
         {
             UnsplashClient unsplash = new(new ClientOptions
             {
-                AccessKey = _unsplashAccessKey
+                AccessKey = _unsplashKey
             });
 
             return await unsplash.Photos.GetRandomPhotosAsync();
@@ -84,10 +101,10 @@ namespace ServerSideProgrammingAssignment
             return await _httpClient.GetByteArrayAsync(url).ConfigureAwait(false);
         }
 
-        static MemoryStream EditImage(byte[] imageBytes, string message)
+        static MemoryStream GetEditedImageStream(byte[] imageBytes, string message)
         {
-            var image = Image.Load(imageBytes);
-            var font = SystemFonts.CreateFont("Arial", 48);
+            Image image = Image.Load(imageBytes);
+            Font font = SystemFonts.CreateFont("Arial", 48);
             MemoryStream memoryStream = new();
 
             image.Clone(img =>
