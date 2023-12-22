@@ -20,7 +20,7 @@ namespace ServerSideProgrammingAssignment
         [FunctionName("WriteImageQueue")]
         public static async Task Run([QueueTrigger("write-image-queue", Connection = "AzureWebJobsStorage")] string message)
         {
-            string guid = message.Split('|')[0];
+            string collection = message.Split('|')[0];
             string imageUrl = message.Split('|')[1];
             string filename = message.Split('|')[2];
             string weatherInfo = message.Split('|')[3];
@@ -28,7 +28,7 @@ namespace ServerSideProgrammingAssignment
             var imageStream = await GetImageStream(imageUrl);
             MemoryStream memoryStream = WriteToImage(imageStream, weatherInfo);
 
-            StoreImage(guid, filename, memoryStream);
+            StoreImage(collection, filename, memoryStream);
         }
 
         private static async Task<Byte[]> GetImageStream(string url)
@@ -52,10 +52,10 @@ namespace ServerSideProgrammingAssignment
             return memoryStream;
         }
 
-        private static void StoreImage(string guid, string filename, MemoryStream memoryStream)
+        private static void StoreImage(string collection, string filename, MemoryStream memoryStream)
         {
             BlobContainerClient containerClient = new BlobContainerClient(_connectionString, $"{_containerName}");
-            BlobClient blobClient = containerClient.GetBlobClient($"{guid}/{filename}");
+            BlobClient blobClient = containerClient.GetBlobClient($"{collection}/{filename}");
 
             blobClient.UploadAsync(memoryStream);
         }

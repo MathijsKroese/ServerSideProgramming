@@ -17,25 +17,19 @@ namespace ServerSideProgrammingAssignment
         private static readonly string _weatherUrl = Environment.GetEnvironmentVariable("WeatherUrl");
         private static readonly string _unsplashKey = Environment.GetEnvironmentVariable("UnsplashKey");
         [FunctionName("GenerateImageSetQueue")]
-        public static async Task Run([QueueTrigger("generate-set-queue", Connection = "AzureWebJobsStorage")] string guid,
+        public static async Task Run([QueueTrigger("generate-set-queue", Connection = "AzureWebJobsStorage")] string collection,
             [Queue("write-image-queue", Connection = "AzureWebJobsStorage")] CloudQueue queue)
         {
             List<WeatherStation> stations = await GetWeatherStations();
             IEnumerable<Photo.Random> image = await GetRandomImage();
-
-            int count = 0;
 
             foreach (WeatherStation station in stations)
             {
                 string weatherInfo = $"{station.StationName}\n{station.TimeStamp.ToString("dd/MM/yyyy HH:mm")}\n{station.WeatherDescription}";
                 string filename = $"{station.StationName}.png";
 
-                if (count <= 2)
-                {
-                    CloudQueueMessage message = new($"{guid}|{image.FirstOrDefault().Urls.Regular}|{filename}|{weatherInfo}");
-                    queue.AddMessage(message);
-                }
-                count++;
+                CloudQueueMessage message = new($"{collection}|{image.FirstOrDefault().Urls.Regular}|{filename}|{weatherInfo}");
+                queue.AddMessage(message);
             }
 
             static async Task<List<WeatherStation>> GetWeatherStations()
