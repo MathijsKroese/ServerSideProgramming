@@ -1,0 +1,76 @@
+{
+	"info": {
+		"_postman_id": "9399a020-fd56-422e-9e40-2dfe6e44a73f",
+		"name": "ServerSideProgramming",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "6020630"
+	},
+	"item": [
+		{
+			"name": "https://serversideprogrammingassignment.azurewebsites.net/api/RetrieveImageSet?clientId=apim-ServerSideProgrammingAssignment-apim&guid=5cdadc6f-8e0b-4a2c-8be6-2a76b75f51a1",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://serversideprogrammingassignment.azurewebsites.net/api/RetrieveImageSet?clientId=apim-ServerSideProgrammingAssignment-apim&guid=5cdadc6f-8e0b-4a2c-8be6-2a76b75f51a1",
+					"protocol": "https",
+					"host": [
+						"serversideprogrammingassignment",
+						"azurewebsites",
+						"net"
+					],
+					"path": [
+						"api",
+						"RetrieveImageSet"
+					],
+					"query": [
+						{
+							"key": "clientId",
+							"value": "apim-ServerSideProgrammingAssignment-apim"
+						},
+						{
+							"key": "guid",
+							"value": "5cdadc6f-8e0b-4a2c-8be6-2a76b75f51a1"
+						}
+					]
+				},
+				"description": "Get a list with links to download each of the images that have been created.\n\nThe collection is based on the created identifier from the /GiveMeTheWeather endpoint."
+			},
+			"response": []
+		},
+		{
+			"name": "https://serversideprogrammingassignment.azurewebsites.net/api/GiveMeTheWeather?clientId=apim-ServerSideProgrammingAssignment-apim",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "credentials",
+						"value": "TotallyLegitCredentials",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://serversideprogrammingassignment.azurewebsites.net/api/GiveMeTheWeather?clientId=apim-ServerSideProgrammingAssignment-apim",
+					"protocol": "https",
+					"host": [
+						"serversideprogrammingassignment",
+						"azurewebsites",
+						"net"
+					],
+					"path": [
+						"api",
+						"GiveMeTheWeather"
+					],
+					"query": [
+						{
+							"key": "clientId",
+							"value": "apim-ServerSideProgrammingAssignment-apim"
+						}
+					]
+				},
+				"description": "Start the process of retrieving a set of images with weather descriptions from Buienradar. Each weatherstation will provide it's own image.\n\nA list of images which can be downloaded collection will be provided in the response.\n\nRequires the correct credentials, which have been provided for testing purposes."
+			},
+			"response": []
+		}
+	]
+}
