@@ -15,8 +15,8 @@ var appInsightsName = '${resourcePrefix}-AI-1'
 var storageAccountName = replace(toLower('${resourcePrefix}-SA-1'), '-', '')
 var functionAppName = '${resourcePrefix}-FA-1'
 var serverFarmName = '${resourcePrefix}-ASP-1'
-var generateSetQueueName = '${resourcePrefix}/SQ-1' 
-var writeImageQueueName = '${resourcePrefix}/IQ-1' 
+var generateSetQueueName = 'generate-set-queue' 
+var writeImageQueueName = 'write-image-queue' 
 
 // Storage account
 
@@ -35,21 +35,21 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
   }
 }
 
-// Queue Triggers
-resource generateSetQueue 'Microsoft.Storage/storageAccounts/queueServices/queues@2022-09-01' = {
-  name: generateSetQueueName
-  properties: {
-    metadata: {}
-  }
+// Queue related
+
+resource queueService 'Microsoft.Storage/storageAccounts/queueServices@2023-01-01' = {
+  parent:storageAccount
+  name: 'default'	
 }
 
+resource generateSetQueue 'Microsoft.Storage/storageAccounts/queueServices/queues@2023-01-01' = {
+  parent: queueService
+  name: generateSetQueueName
+}
 
 resource writeImageQueue 'Microsoft.Storage/storageAccounts/queueServices/queues@2023-01-01' = {
+  parent: queueService
   name: writeImageQueueName
-  properties: {}
-  dependsOn: [
-    storageAccount
-  ]
 }
 
 // App insights
